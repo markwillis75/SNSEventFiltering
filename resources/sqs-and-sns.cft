@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "Queue-1"
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: "Topic-1"
+  Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt
+        - SQSQueue
+        - Arn
+      TopicArn: !Ref SNSTopic
+      RawMessageDelivery: true
+      Protocol: sqs
+      FilterPolicy: { "Trace": ["true"] }
+  SQSQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref SQSQueue
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - "SQS:SendMessage"
+              - "SQS:ReceiveMessage"
+            Effect:  "Allow"
+            Resource: !GetAtt
+              - SQSQueue
+              - Arn
+            Principal:
+              AWS:
+                - '*'
+Outputs:
+  QueueURL:
+    Description: "URL of new Amazon SQS Queue"
+    Value:
+      Ref: SQSQueue
+  QueueARN:
+    Description: "ARN of new Amazon SQS Queue"
+    Value:
+      Fn::GetAtt:
+        - SQSQueue
+        - Arn
+  TopicARN:
+    Description: "ARN of new Amazon SNS Topic"
+    Value:
+      Ref: SNSTopic
